@@ -5,10 +5,12 @@ from multiprocessing import cpu_count
 from typing import Tuple, List, Union
 import numba
 
+from PIL import Image
+
 
 def calculate_gradients(normals: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     normals = normals.astype(np.float64)
-
+    # print(normals[..., 0])
     horizontal_angle_map = np.arccos(np.clip(normals[..., 0], -1, 1))
     left_gradients = np.sign(horizontal_angle_map - np.pi / 2) * (
         1 - np.sin(horizontal_angle_map)
@@ -170,6 +172,8 @@ def estimate_height_map(
     heights /= height_divisor
     heights *= 2**16 - 1
 
+    # print(np.min(heights), np.max(heights))
+
     if np.min(heights) < 0 or np.max(heights) > 2**16 - 1:
         raise OverflowError("Height values are clipping.")
 
@@ -177,3 +181,20 @@ def estimate_height_map(
     heights = heights.astype(np.uint16)
 
     return heights
+
+
+def main():
+    normal_map = np.array(Image.open("normal_mapping_a.png"))
+
+    # height_map = Image.fromarray(
+    #     estimate_height_map(np.array(normal_map, dtype=np.float64))
+    # )
+    # height_map.save("Height_map.png")
+
+    normal_map = np.pad(normal_map, ((0, 0), (0, 0), (0, 1)), constant_values=255)
+    l_grad, t_grad = calculate_gradients(normal_map)
+    print(l_grad)
+
+
+if __name__ == "__main__":
+    main()
